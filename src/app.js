@@ -79,7 +79,7 @@ const hashFunctions = [
         name: 'SHA-256 (hash-wasm)',
         async hash(buffer) {
             const t0 = performance.now();
-            const hash = await hashwasm.sha256(new Uint8Array(buffer));
+            const hash = await window.hashWasm.sha256(new Uint8Array(buffer));
             const t1 = performance.now();
             return { hash, time: t1 - t0 };
         }
@@ -88,7 +88,7 @@ const hashFunctions = [
         name: 'MD5 (hash-wasm)',
         async hash(buffer) {
             const t0 = performance.now();
-            const hash = await hashwasm.md5(new Uint8Array(buffer));
+            const hash = await window.hashWasm.md5(new Uint8Array(buffer));
             const t1 = performance.now();
             return { hash, time: t1 - t0 };
         }
@@ -98,7 +98,8 @@ const hashFunctions = [
         name: 'Object Hash (node-object-hash)',
         async hash(buffer) {
             const t0 = performance.now();
-            const objHash = objectHash();
+            const objHash = window.objectHash ? window.objectHash() : (window['objectHash'] ? window['objectHash']() : null);
+            if (!objHash) throw new Error('objectHash não encontrado');
             const hash = objHash.hash(Array.from(new Uint8Array(buffer)));
             const t1 = performance.now();
             return { hash, time: t1 - t0 };
@@ -108,9 +109,10 @@ const hashFunctions = [
     {
         name: 'SHA-256 (SJCL)',
         async hash(buffer) {
+            if (!window.sjcl) throw new Error('SJCL não encontrado');
             const t0 = performance.now();
-            const bitArray = sjcl.codec.bytes.toBits(Array.from(new Uint8Array(buffer)));
-            const hash = sjcl.codec.hex.fromBits(sjcl.hash.sha256.hash(bitArray));
+            const bitArray = window.sjcl.codec.bytes.toBits(Array.from(new Uint8Array(buffer)));
+            const hash = window.sjcl.codec.hex.fromBits(window.sjcl.hash.sha256.hash(bitArray));
             const t1 = performance.now();
             return { hash, time: t1 - t0 };
         }
@@ -119,8 +121,10 @@ const hashFunctions = [
     {
         name: 'SHA-256 (hash.js)',
         async hash(buffer) {
+            if (!window.hashjs && !window.hash_js) throw new Error('hash.js não encontrado');
+            const hashjsObj = window.hashjs || window.hash_js;
             const t0 = performance.now();
-            const hash = hashjs.sha256().update(new Uint8Array(buffer)).digest('hex');
+            const hash = hashjsObj.sha256().update(new Uint8Array(buffer)).digest('hex');
             const t1 = performance.now();
             return { hash, time: t1 - t0 };
         }
@@ -129,8 +133,10 @@ const hashFunctions = [
     {
         name: 'SHA-256 (sha.js)',
         async hash(buffer) {
+            if (!window.sha256 && !window.sha_js) throw new Error('sha.js não encontrado');
+            const Sha256 = window.sha256 || window.sha_js;
             const t0 = performance.now();
-            const hash = (new window.sha256()).update(new Uint8Array(buffer)).digest('hex');
+            const hash = (new Sha256()).update(new Uint8Array(buffer)).digest('hex');
             const t1 = performance.now();
             return { hash, time: t1 - t0 };
         }
