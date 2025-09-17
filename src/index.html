@@ -9,6 +9,14 @@
 <body>
     <h1>HashCalc - Benchmark de Hash</h1>
     <form id="uploadForm">
+        <label for="languageSelect">Escolha a linguagem:</label>
+        <select id="languageSelect">
+            <option value="js">JavaScript</option>
+            <option value="ts">TypeScript</option>
+            <option value="py">Python</option>
+            <option value="rb">Ruby</option>
+        </select>
+        <br><br>
         <input type="file" id="fileInput" accept="*/*" required />
         <button type="submit">Calcular Hashes</button>
     </form>
@@ -27,6 +35,10 @@
     <script src="https://cdn.jsdelivr.net/npm/md5@2.3.0/dist/md5.min.js"></script>
     <!-- js-md5 -->
     <script src="https://cdn.jsdelivr.net/npm/js-md5@0.7.3/build/md5.min.js"></script>
+    <!-- Pyodide for Python -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <!-- Opal for Ruby -->
+    <script src="https://cdn.opalrb.com/opal/current/opal.min.js"></script>
     <!-- SparkMD5 e jsSHA já estavam sendo carregados dinamicamente em app.js -->
     <script src="app.js"></script>
 </body>

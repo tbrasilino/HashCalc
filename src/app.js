@@ -321,12 +321,67 @@ async function main() {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js');
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsSHA/3.2.0/sha.js');
 
+    // Inicializar Pyodide
+    let pyodide = null;
+    try {
+        pyodide = await loadPyodide();
+        await pyodide.runPythonAsync(`
+import sys
+sys.path.append('.')
+`);
+    } catch (e) {
+        console.warn('Pyodide não carregou:', e);
+    }
+
+    // Inicializar Opal
+    let opal = null;
+    try {
+        opal = Opal;
+    } catch (e) {
+        console.warn('Opal não carregou:', e);
+    }
+
     document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const file = document.getElementById('fileInput').files[0];
         if (!file) return;
         document.getElementById('results').innerHTML = 'Calculando...';
-        const results = await runBenchmarks(file);
+
+        const language = document.getElementById('languageSelect').value;
+        let results = [];
+
+        if (language === 'js') {
+            results = await runBenchmarks(file);
+        } else if (language === 'ts') {
+            // Load TS compiled JS
+            await loadScript('app_ts.js');
+            results = await window.runBenchmarksTS(file);
+        } else if (language === 'py' && pyodide) {
+            const fileData = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(fileData);
+            pyodide.globals.set('file_bytes', uint8Array);
+            const pyResults = await pyodide.runPythonAsync(`
+import app_py
+results = app_py.benchmark(file_bytes.to_py())
+results
+`);
+            results = pyResults.toJs();
+        } else if (language === 'rb' && opal) {
+            const fileData = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(fileData);
+            // Opal integration
+            Opal.eval('require "app_rb"');
+            const rbResults = Opal.eval(`benchmark(${JSON.stringify(Array.from(uint8Array))})`);
+            results = rbResults.$to_a().map(r => ({
+                name: r.$fetch('name'),
+                hash: r.$fetch('hash'),
+                time: r.$fetch('time')
+            }));
+        } else {
+            alert('Linguagem não suportada ou não carregada.');
+            return;
+        }
+
         saveResultsToLocalStorage(results);
         showResults(results);
         plotChart(results);
