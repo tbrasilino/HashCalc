@@ -35,10 +35,10 @@ const hashFunctions = [
         }
     },
     {
-        name: 'SHA-384 (WebCrypto)',
+        name: 'SHA-512 (WebCrypto)',
         async hash(buffer) {
             const t0 = performance.now();
-            const hashBuffer = await crypto.subtle.digest('SHA-384', buffer);
+            const hashBuffer = await crypto.subtle.digest('SHA-512', buffer);
             const t1 = performance.now();
             return { hash: bufferToHex(hashBuffer), time: t1 - t0 };
         }
@@ -64,6 +64,26 @@ const hashFunctions = [
             return { hash, time: t1 - t0 };
         }
     },
+    {
+        name: 'SHA-1 (CryptoJS)',
+        async hash(buffer) {
+            const t0 = performance.now();
+            const wordArray = CryptoJS.lib.WordArray.create(new Uint8Array(buffer));
+            const hash = CryptoJS.SHA1(wordArray).toString(CryptoJS.enc.Hex);
+            const t1 = performance.now();
+            return { hash, time: t1 - t0 };
+        }
+    },
+    {
+        name: 'SHA-512 (CryptoJS)',
+        async hash(buffer) {
+            const t0 = performance.now();
+            const wordArray = CryptoJS.lib.WordArray.create(new Uint8Array(buffer));
+            const hash = CryptoJS.SHA512(wordArray).toString(CryptoJS.enc.Hex);
+            const t1 = performance.now();
+            return { hash, time: t1 - t0 };
+        }
+    },
     // js-sha256
     {
         name: 'SHA-256 (js-sha256)',
@@ -78,13 +98,13 @@ const hashFunctions = [
     {
         name: 'SHA-256 (hash-wasm)',
         async hash(buffer) {
-            if (!window.hashwasm) {
-                console.error('hashwasm não encontrado:', window.hashwasm);
-                throw new Error('hashwasm não encontrado');
+            if (!window.hashWasm) {
+                console.error('hashWasm não encontrado:', window.hashWasm);
+                throw new Error('hashWasm não encontrado');
             }
             const t0 = performance.now();
             try {
-                const hash = await window.hashwasm.sha256(new Uint8Array(buffer));
+                const hash = await window.hashWasm.sha256(new Uint8Array(buffer));
                 const t1 = performance.now();
                 return { hash, time: t1 - t0 };
             } catch (e) {
@@ -96,17 +116,89 @@ const hashFunctions = [
     {
         name: 'MD5 (hash-wasm)',
         async hash(buffer) {
-            if (!window.hashwasm) {
-                console.error('hashwasm não encontrado:', window.hashwasm);
-                throw new Error('hashwasm não encontrado');
+            if (!window.hashWasm) {
+                console.error('hashWasm não encontrado:', window.hashWasm);
+                throw new Error('hashWasm não encontrado');
             }
             const t0 = performance.now();
             try {
-                const hash = await window.hashwasm.md5(new Uint8Array(buffer));
+                const hash = await window.hashWasm.md5(new Uint8Array(buffer));
                 const t1 = performance.now();
                 return { hash, time: t1 - t0 };
             } catch (e) {
                 console.error('Erro hash-wasm MD5:', e);
+                throw e;
+            }
+        }
+    },
+    {
+        name: 'SHA-1 (hash-wasm)',
+        async hash(buffer) {
+            if (!window.hashWasm) {
+                console.error('hashWasm não encontrado:', window.hashWasm);
+                throw new Error('hashWasm não encontrado');
+            }
+            const t0 = performance.now();
+            try {
+                const hash = await window.hashWasm.sha1(new Uint8Array(buffer));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro hash-wasm SHA-1:', e);
+                throw e;
+            }
+        }
+    },
+    {
+        name: 'SHA-224 (hash-wasm)',
+        async hash(buffer) {
+            if (!window.hashWasm) {
+                console.error('hashWasm não encontrado:', window.hashWasm);
+                throw new Error('hashWasm não encontrado');
+            }
+            const t0 = performance.now();
+            try {
+                const hash = await window.hashWasm.sha224(new Uint8Array(buffer));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro hash-wasm SHA-224:', e);
+                throw e;
+            }
+        }
+    },
+    {
+        name: 'SHA-384 (hash-wasm)',
+        async hash(buffer) {
+            if (!window.hashWasm) {
+                console.error('hashWasm não encontrado:', window.hashWasm);
+                throw new Error('hashWasm não encontrado');
+            }
+            const t0 = performance.now();
+            try {
+                const hash = await window.hashWasm.sha384(new Uint8Array(buffer));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro hash-wasm SHA-384:', e);
+                throw e;
+            }
+        }
+    },
+    {
+        name: 'SHA-512 (hash-wasm)',
+        async hash(buffer) {
+            if (!window.hashWasm) {
+                console.error('hashWasm não encontrado:', window.hashWasm);
+                throw new Error('hashWasm não encontrado');
+            }
+            const t0 = performance.now();
+            try {
+                const hash = await window.hashWasm.sha512(new Uint8Array(buffer));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro hash-wasm SHA-512:', e);
                 throw e;
             }
         }
@@ -118,8 +210,9 @@ const hashFunctions = [
             const t0 = performance.now();
             let objHash = null;
             if (window.objectHash) objHash = window.objectHash();
+            else if (window['objectHash']) objHash = window['objectHash']();
             else {
-                console.error('objectHash não encontrado:', window.objectHash);
+                console.error('objectHash não encontrado:', window.objectHash, window['objectHash']);
                 throw new Error('objectHash não encontrado');
             }
             try {
@@ -154,13 +247,51 @@ const hashFunctions = [
             }
         }
     },
+    {
+        name: 'SHA-1 (SJCL)',
+        async hash(buffer) {
+            if (!window.sjcl) {
+                console.error('SJCL não encontrado:', window.sjcl);
+                throw new Error('SJCL não encontrado');
+            }
+            const t0 = performance.now();
+            try {
+                const str = new TextDecoder().decode(buffer);
+                const hash = window.sjcl.codec.hex.fromBits(window.sjcl.hash.sha1.hash(str));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro SJCL SHA-1:', e);
+                throw e;
+            }
+        }
+    },
+    {
+        name: 'SHA-512 (SJCL)',
+        async hash(buffer) {
+            if (!window.sjcl) {
+                console.error('SJCL não encontrado:', window.sjcl);
+                throw new Error('SJCL não encontrado');
+            }
+            const t0 = performance.now();
+            try {
+                const str = new TextDecoder().decode(buffer);
+                const hash = window.sjcl.codec.hex.fromBits(window.sjcl.hash.sha512.hash(str));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro SJCL SHA-512:', e);
+                throw e;
+            }
+        }
+    },
     // hash.js
     {
         name: 'SHA-256 (hash.js)',
         async hash(buffer) {
-            let hashjsObj = window.hash || window.hashjs;
+            let hashjsObj = window.hashjs || window.hash_js || window.hash;
             if (!hashjsObj) {
-                console.error('hash.js não encontrado:', window.hash, window.hashjs);
+                console.error('hash.js não encontrado:', window.hashjs, window.hash_js, window.hash);
                 throw new Error('hash.js não encontrado');
             }
             const t0 = performance.now();
@@ -174,22 +305,40 @@ const hashFunctions = [
             }
         }
     },
-    // sha.js
     {
-        name: 'SHA-256 (sha.js)',
+        name: 'SHA-1 (hash.js)',
         async hash(buffer) {
-            let Sha256 = window.sha || window.sha256;
-            if (!Sha256) {
-                console.error('sha.js não encontrado:', window.sha, window.sha256);
-                throw new Error('sha.js não encontrado');
+            let hashjsObj = window.hashjs || window.hash_js || window.hash;
+            if (!hashjsObj) {
+                console.error('hash.js não encontrado:', window.hashjs, window.hash_js, window.hash);
+                throw new Error('hash.js não encontrado');
             }
             const t0 = performance.now();
             try {
-                const hash = (new Sha256()).update(new Uint8Array(buffer)).digest('hex');
+                const hash = hashjsObj.sha1().update(new Uint8Array(buffer)).digest('hex');
                 const t1 = performance.now();
                 return { hash, time: t1 - t0 };
             } catch (e) {
-                console.error('Erro sha.js:', e);
+                console.error('Erro hash.js SHA-1:', e);
+                throw e;
+            }
+        }
+    },
+    {
+        name: 'SHA-512 (hash.js)',
+        async hash(buffer) {
+            let hashjsObj = window.hashjs || window.hash_js || window.hash;
+            if (!hashjsObj) {
+                console.error('hash.js não encontrado:', window.hashjs, window.hash_js, window.hash);
+                throw new Error('hash.js não encontrado');
+            }
+            const t0 = performance.now();
+            try {
+                const hash = hashjsObj.sha512().update(new Uint8Array(buffer)).digest('hex');
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro hash.js SHA-512:', e);
                 throw e;
             }
         }
@@ -235,6 +384,61 @@ const hashFunctions = [
             const t1 = performance.now();
             return { hash, time: t1 - t0 };
         }
+    },
+    {
+        name: 'SHA-1 (jsSHA)',
+        async hash(buffer) {
+            const t0 = performance.now();
+            const shaObj = new jsSHA('SHA-1', 'ARRAYBUFFER');
+            shaObj.update(buffer);
+            const hash = shaObj.getHash('HEX');
+            const t1 = performance.now();
+            return { hash, time: t1 - t0 };
+        }
+    },
+    {
+        name: 'SHA-224 (jsSHA)',
+        async hash(buffer) {
+            const t0 = performance.now();
+            const shaObj = new jsSHA('SHA-224', 'ARRAYBUFFER');
+            shaObj.update(buffer);
+            const hash = shaObj.getHash('HEX');
+            const t1 = performance.now();
+            return { hash, time: t1 - t0 };
+        }
+    },
+    {
+        name: 'SHA-256 (jsSHA)',
+        async hash(buffer) {
+            const t0 = performance.now();
+            const shaObj = new jsSHA('SHA-256', 'ARRAYBUFFER');
+            shaObj.update(buffer);
+            const hash = shaObj.getHash('HEX');
+            const t1 = performance.now();
+            return { hash, time: t1 - t0 };
+        }
+    },
+    {
+        name: 'SHA-384 (jsSHA)',
+        async hash(buffer) {
+            const t0 = performance.now();
+            const shaObj = new jsSHA('SHA-384', 'ARRAYBUFFER');
+            shaObj.update(buffer);
+            const hash = shaObj.getHash('HEX');
+            const t1 = performance.now();
+            return { hash, time: t1 - t0 };
+        }
+    },
+    {
+        name: 'SHA-512 (jsSHA)',
+        async hash(buffer) {
+            const t0 = performance.now();
+            const shaObj = new jsSHA('SHA-512', 'ARRAYBUFFER');
+            shaObj.update(buffer);
+            const hash = shaObj.getHash('HEX');
+            const t1 = performance.now();
+            return { hash, time: t1 - t0 };
+        }
     }
 ];
 // js-md5 e md5 possuem nomes conflitantes, então criamos um alias para js-md5
@@ -247,14 +451,23 @@ function bufferToHex(buffer) {
 async function runBenchmarks(file) {
     const arrayBuffer = await file.arrayBuffer();
     const results = [];
-    for (const fn of hashFunctions) {
+    const promises = hashFunctions.map(async (fn) => {
         try {
             const { hash, time } = await fn.hash(arrayBuffer);
-            results.push({ name: fn.name, hash, time });
+            return { name: fn.name, hash, time };
         } catch (e) {
-            results.push({ name: fn.name, hash: 'Erro', time: 0 });
+            console.error(`Erro em ${fn.name}:`, e);
+            return { name: fn.name, hash: 'Erro', time: 0 };
         }
-    }
+    });
+    const resolvedResults = await Promise.allSettled(promises);
+    resolvedResults.forEach(result => {
+        if (result.status === 'fulfilled') {
+            results.push(result.value);
+        } else {
+            results.push({ name: 'Erro', hash: 'Erro', time: 0 });
+        }
+    });
     return results;
 }
 
@@ -266,13 +479,8 @@ function saveResultsToLocalStorage(results) {
 
 function showResults(results) {
     const resultsDiv = document.getElementById('results');
-    let html = '<h2>Resultados</h2>';
-    html += '<table border="1" style="width:100%; border-collapse:collapse;"><thead><tr><th>Biblioteca</th><th>Hash</th><th>Tempo (ms)</th></tr></thead><tbody>';
-    results.forEach(r => {
-        html += `<tr><td>${r.name}</td><td>${r.hash}</td><td>${r.time.toFixed(2)}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    resultsDiv.innerHTML = html;
+    resultsDiv.innerHTML = '<h2>Resultados</h2>' +
+        '<ul>' + results.map(r => `<li><b>${r.name}:</b> ${r.hash} <br><i>${r.time.toFixed(2)} ms</i></li>`).join('') + '</ul>';
 }
 
 function plotChart(results) {
