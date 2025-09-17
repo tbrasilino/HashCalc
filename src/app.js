@@ -451,23 +451,15 @@ function bufferToHex(buffer) {
 async function runBenchmarks(file) {
     const arrayBuffer = await file.arrayBuffer();
     const results = [];
-    const promises = hashFunctions.map(async (fn) => {
+    for (const fn of hashFunctions) {
         try {
             const { hash, time } = await fn.hash(arrayBuffer);
-            return { name: fn.name, hash, time };
+            results.push({ name: fn.name, hash, time });
         } catch (e) {
             console.error(`Erro em ${fn.name}:`, e);
-            return { name: fn.name, hash: 'Erro', time: 0 };
+            results.push({ name: fn.name, hash: 'Erro', time: 0 });
         }
-    });
-    const resolvedResults = await Promise.allSettled(promises);
-    resolvedResults.forEach(result => {
-        if (result.status === 'fulfilled') {
-            results.push(result.value);
-        } else {
-            results.push({ name: 'Erro', hash: 'Erro', time: 0 });
-        }
-    });
+    }
     return results;
 }
 
