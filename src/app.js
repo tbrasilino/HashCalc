@@ -78,19 +78,37 @@ const hashFunctions = [
     {
         name: 'SHA-256 (hash-wasm)',
         async hash(buffer) {
+            if (!window.hashWasm) {
+                console.error('hashWasm não encontrado:', window.hashWasm);
+                throw new Error('hashWasm não encontrado');
+            }
             const t0 = performance.now();
-            const hash = await window.hashWasm.sha256(new Uint8Array(buffer));
-            const t1 = performance.now();
-            return { hash, time: t1 - t0 };
+            try {
+                const hash = await window.hashWasm.sha256(new Uint8Array(buffer));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro hash-wasm SHA-256:', e);
+                throw e;
+            }
         }
     },
     {
         name: 'MD5 (hash-wasm)',
         async hash(buffer) {
+            if (!window.hashWasm) {
+                console.error('hashWasm não encontrado:', window.hashWasm);
+                throw new Error('hashWasm não encontrado');
+            }
             const t0 = performance.now();
-            const hash = await window.hashWasm.md5(new Uint8Array(buffer));
-            const t1 = performance.now();
-            return { hash, time: t1 - t0 };
+            try {
+                const hash = await window.hashWasm.md5(new Uint8Array(buffer));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro hash-wasm MD5:', e);
+                throw e;
+            }
         }
     },
     // node-object-hash
@@ -98,47 +116,83 @@ const hashFunctions = [
         name: 'Object Hash (node-object-hash)',
         async hash(buffer) {
             const t0 = performance.now();
-            const objHash = window.objectHash ? window.objectHash() : (window['objectHash'] ? window['objectHash']() : null);
-            if (!objHash) throw new Error('objectHash não encontrado');
-            const hash = objHash.hash(Array.from(new Uint8Array(buffer)));
-            const t1 = performance.now();
-            return { hash, time: t1 - t0 };
+            let objHash = null;
+            if (window.objectHash) objHash = window.objectHash();
+            else if (window['objectHash']) objHash = window['objectHash']();
+            else {
+                console.error('objectHash não encontrado:', window.objectHash, window['objectHash']);
+                throw new Error('objectHash não encontrado');
+            }
+            try {
+                // node-object-hash espera objetos JS, não ArrayBuffer. Usar array de bytes.
+                const hash = objHash.hash(Array.from(new Uint8Array(buffer)));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro node-object-hash:', e);
+                throw e;
+            }
         }
     },
     // SJCL
     {
         name: 'SHA-256 (SJCL)',
         async hash(buffer) {
-            if (!window.sjcl) throw new Error('SJCL não encontrado');
+            if (!window.sjcl) {
+                console.error('SJCL não encontrado:', window.sjcl);
+                throw new Error('SJCL não encontrado');
+            }
             const t0 = performance.now();
-            const bitArray = window.sjcl.codec.bytes.toBits(Array.from(new Uint8Array(buffer)));
-            const hash = window.sjcl.codec.hex.fromBits(window.sjcl.hash.sha256.hash(bitArray));
-            const t1 = performance.now();
-            return { hash, time: t1 - t0 };
+            try {
+                // SJCL espera string ou bitArray. Vamos tentar string.
+                const str = new TextDecoder().decode(buffer);
+                const hash = window.sjcl.codec.hex.fromBits(window.sjcl.hash.sha256.hash(str));
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro SJCL:', e);
+                throw e;
+            }
         }
     },
     // hash.js
     {
         name: 'SHA-256 (hash.js)',
         async hash(buffer) {
-            if (!window.hashjs && !window.hash_js) throw new Error('hash.js não encontrado');
-            const hashjsObj = window.hashjs || window.hash_js;
+            let hashjsObj = window.hashjs || window.hash_js || window.hash;
+            if (!hashjsObj) {
+                console.error('hash.js não encontrado:', window.hashjs, window.hash_js, window.hash);
+                throw new Error('hash.js não encontrado');
+            }
             const t0 = performance.now();
-            const hash = hashjsObj.sha256().update(new Uint8Array(buffer)).digest('hex');
-            const t1 = performance.now();
-            return { hash, time: t1 - t0 };
+            try {
+                const hash = hashjsObj.sha256().update(new Uint8Array(buffer)).digest('hex');
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro hash.js:', e);
+                throw e;
+            }
         }
     },
     // sha.js
     {
         name: 'SHA-256 (sha.js)',
         async hash(buffer) {
-            if (!window.sha256 && !window.sha_js) throw new Error('sha.js não encontrado');
-            const Sha256 = window.sha256 || window.sha_js;
+            let Sha256 = window.sha256 || window.sha_js || window.sha;
+            if (!Sha256) {
+                console.error('sha.js não encontrado:', window.sha256, window.sha_js, window.sha);
+                throw new Error('sha.js não encontrado');
+            }
             const t0 = performance.now();
-            const hash = (new Sha256()).update(new Uint8Array(buffer)).digest('hex');
-            const t1 = performance.now();
-            return { hash, time: t1 - t0 };
+            try {
+                const hash = (new Sha256()).update(new Uint8Array(buffer)).digest('hex');
+                const t1 = performance.now();
+                return { hash, time: t1 - t0 };
+            } catch (e) {
+                console.error('Erro sha.js:', e);
+                throw e;
+            }
         }
     },
     // md5
