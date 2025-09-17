@@ -281,12 +281,16 @@ function saveResultsToLocalStorage(results) {
 }
 
 function showResults(results) {
+    // Ordenar por tamanho do hash (menor para maior)
+    results.sort((a, b) => a.hash.length - b.hash.length);
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = '<h2>Resultados</h2>' +
         '<ul>' + results.map(r => `<li><b>${r.name}:</b> ${r.hash} <br><i>${r.time.toFixed(2)} ms</i></li>`).join('') + '</ul>';
 }
 
 function plotChart(results) {
+    // Ordenar por tamanho do hash (menor para maior)
+    results.sort((a, b) => a.hash.length - b.hash.length);
     const ctx = document.getElementById('hashChart').getContext('2d');
     if (window.hashChartInstance) window.hashChartInstance.destroy();
     window.hashChartInstance = new Chart(ctx, {
