@@ -359,18 +359,23 @@ sys.path.append('.')
         } else if (language === 'py' && pyodide) {
             const fileData = await file.arrayBuffer();
             const uint8Array = new Uint8Array(fileData);
+            // Load app.py
+            const response = await fetch('app.py');
+            const pyCode = await response.text();
+            await pyodide.runPythonAsync(pyCode);
             pyodide.globals.set('file_bytes', uint8Array);
             const pyResults = await pyodide.runPythonAsync(`
-import app_py
-results = app_py.benchmark(file_bytes.to_py())
+results = benchmark(file_bytes)
 results
 `);
             results = pyResults.toJs();
         } else if (language === 'rb' && opal) {
             const fileData = await file.arrayBuffer();
             const uint8Array = new Uint8Array(fileData);
-            // Opal integration
-            Opal.eval('require "app_rb"');
+            // Load app.rb
+            const response = await fetch('app.rb');
+            const rbCode = await response.text();
+            Opal.eval(rbCode);
             const rbResults = Opal.eval(`benchmark(${JSON.stringify(Array.from(uint8Array))})`);
             results = rbResults.$to_a().map(r => ({
                 name: r.$fetch('name'),

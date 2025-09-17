@@ -1,9 +1,7 @@
 // app_ts.js - Compiled TypeScript
-// Similar to app.js
+// Avoid redeclaring hashFunctions
 
-// ... existing code from app.js but with TS types in comments
-
-const hashFunctions = [
+const hashFunctionsTS = [
     // Web Crypto API
     {
         name: 'SHA-1 (WebCrypto TS)',
@@ -14,17 +12,17 @@ const hashFunctions = [
             return { name: 'SHA-1 (WebCrypto TS)', hash: bufferToHex(hashBuffer), time: t1 - t0 };
         }
     },
-    // Add more...
+    // Add more for full implementation...
 ];
 
-function bufferToHex(buffer) {
+function bufferToHexTS(buffer) {
     return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function runBenchmarksTS(file) {
     const arrayBuffer = await file.arrayBuffer();
     const results = [];
-    for (const fn of hashFunctions) {
+    for (const fn of hashFunctionsTS) {
         try {
             const { hash, time } = await fn.hash(arrayBuffer);
             results.push({ name: fn.name, hash, time });
