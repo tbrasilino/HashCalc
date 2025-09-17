@@ -321,10 +321,11 @@ async function main() {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/spark-md5/3.0.2/spark-md5.min.js');
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsSHA/3.2.0/sha.js');
 
-    // Inicializar Pyodide
+    // Carregar Pyodide
     let pyodide = null;
     try {
-        pyodide = await loadPyodide();
+        await loadScript('https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js');
+        pyodide = await window.loadPyodide();
         await pyodide.runPythonAsync(`
 import sys
 sys.path.append('.')
@@ -333,10 +334,11 @@ sys.path.append('.')
         console.warn('Pyodide não carregou:', e);
     }
 
-    // Inicializar Opal
+    // Carregar Opal
     let opal = null;
     try {
-        opal = Opal;
+        await loadScript('https://cdn.opalrb.com/opal/current/opal.min.js');
+        opal = window.Opal;
     } catch (e) {
         console.warn('Opal não carregou:', e);
     }
@@ -359,9 +361,35 @@ sys.path.append('.')
         } else if (language === 'py' && pyodide) {
             const fileData = await file.arrayBuffer();
             const uint8Array = new Uint8Array(fileData);
-            // Load app.py
-            const response = await fetch('app.py');
-            const pyCode = await response.text();
+            const pyCode = `
+import hashlib
+import time
+
+def buffer_to_hex(buffer):
+    return ''.join(f'{b:02x}' for b in buffer)
+
+def run_benchmarks(file_data):
+    results = []
+    for algo_name, algo_func in [
+        ('MD5', hashlib.md5),
+        ('SHA-1', hashlib.sha1),
+        ('SHA-256', hashlib.sha256),
+        ('SHA-512', hashlib.sha512),
+    ]:
+        start = time.time()
+        hash_obj = algo_func(file_data)
+        hash_hex = hash_obj.hexdigest()
+        end = time.time()
+        results.append({
+            'name': f'{algo_name} (Python)',
+            'hash': hash_hex,
+            'time': (end - start) * 1000  # ms
+        })
+    return results
+
+def benchmark(file_bytes):
+    return run_benchmarks(file_bytes)
+`;
             await pyodide.runPythonAsync(pyCode);
             pyodide.globals.set('file_bytes', uint8Array);
             const pyResults = await pyodide.runPythonAsync(`
@@ -372,11 +400,39 @@ results
         } else if (language === 'rb' && opal) {
             const fileData = await file.arrayBuffer();
             const uint8Array = new Uint8Array(fileData);
-            // Load app.rb
-            const response = await fetch('app.rb');
-            const rbCode = await response.text();
+            const rbCode = `
+require 'digest'
+
+def buffer_to_hex(buffer)
+  buffer.unpack('H*').first
+end
+
+def run_benchmarks(file_data)
+  results = []
+  [
+    ['MD5', Digest::MD5],
+    ['SHA1', Digest::SHA1],
+    ['SHA256', Digest::SHA256],
+    ['SHA512', Digest::SHA512]
+  ].each do |algo_name, algo_class|
+    start = Time.now
+    hash_hex = algo_class.hexdigest(file_data)
+    finish = Time.now
+    results << {
+      name: "#{algo_name} (Ruby)",
+      hash: hash_hex,
+      time: (finish - start) * 1000 # ms
+    }
+  end
+  results
+end
+
+def benchmark(file_bytes)
+  run_benchmarks(file_bytes.pack('C*'))
+end
+`;
             Opal.eval(rbCode);
-            const rbResults = Opal.eval(`benchmark(${JSON.stringify(Array.from(uint8Array))})`);
+            const rbResults = Opal.eval(`benchmark([${Array.from(uint8Array).join(',')}])`);
             results = rbResults.$to_a().map(r => ({
                 name: r.$fetch('name'),
                 hash: r.$fetch('hash'),
