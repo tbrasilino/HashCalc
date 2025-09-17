@@ -35,10 +35,10 @@ const hashFunctions = [
         }
     },
     {
-        name: 'SHA-512 (WebCrypto)',
+        name: 'SHA-384 (WebCrypto)',
         async hash(buffer) {
             const t0 = performance.now();
-            const hashBuffer = await crypto.subtle.digest('SHA-512', buffer);
+            const hashBuffer = await crypto.subtle.digest('SHA-384', buffer);
             const t1 = performance.now();
             return { hash: bufferToHex(hashBuffer), time: t1 - t0 };
         }
@@ -78,13 +78,13 @@ const hashFunctions = [
     {
         name: 'SHA-256 (hash-wasm)',
         async hash(buffer) {
-            if (!window.hashWasm) {
-                console.error('hashWasm não encontrado:', window.hashWasm);
-                throw new Error('hashWasm não encontrado');
+            if (!window.hashwasm) {
+                console.error('hashwasm não encontrado:', window.hashwasm);
+                throw new Error('hashwasm não encontrado');
             }
             const t0 = performance.now();
             try {
-                const hash = await window.hashWasm.sha256(new Uint8Array(buffer));
+                const hash = await window.hashwasm.sha256(new Uint8Array(buffer));
                 const t1 = performance.now();
                 return { hash, time: t1 - t0 };
             } catch (e) {
@@ -96,13 +96,13 @@ const hashFunctions = [
     {
         name: 'MD5 (hash-wasm)',
         async hash(buffer) {
-            if (!window.hashWasm) {
-                console.error('hashWasm não encontrado:', window.hashWasm);
-                throw new Error('hashWasm não encontrado');
+            if (!window.hashwasm) {
+                console.error('hashwasm não encontrado:', window.hashwasm);
+                throw new Error('hashwasm não encontrado');
             }
             const t0 = performance.now();
             try {
-                const hash = await window.hashWasm.md5(new Uint8Array(buffer));
+                const hash = await window.hashwasm.md5(new Uint8Array(buffer));
                 const t1 = performance.now();
                 return { hash, time: t1 - t0 };
             } catch (e) {
@@ -118,9 +118,8 @@ const hashFunctions = [
             const t0 = performance.now();
             let objHash = null;
             if (window.objectHash) objHash = window.objectHash();
-            else if (window['objectHash']) objHash = window['objectHash']();
             else {
-                console.error('objectHash não encontrado:', window.objectHash, window['objectHash']);
+                console.error('objectHash não encontrado:', window.objectHash);
                 throw new Error('objectHash não encontrado');
             }
             try {
@@ -159,9 +158,9 @@ const hashFunctions = [
     {
         name: 'SHA-256 (hash.js)',
         async hash(buffer) {
-            let hashjsObj = window.hashjs || window.hash_js || window.hash;
+            let hashjsObj = window.hash || window.hashjs;
             if (!hashjsObj) {
-                console.error('hash.js não encontrado:', window.hashjs, window.hash_js, window.hash);
+                console.error('hash.js não encontrado:', window.hash, window.hashjs);
                 throw new Error('hash.js não encontrado');
             }
             const t0 = performance.now();
@@ -179,9 +178,9 @@ const hashFunctions = [
     {
         name: 'SHA-256 (sha.js)',
         async hash(buffer) {
-            let Sha256 = window.sha256 || window.sha_js || window.sha;
+            let Sha256 = window.sha || window.sha256;
             if (!Sha256) {
-                console.error('sha.js não encontrado:', window.sha256, window.sha_js, window.sha);
+                console.error('sha.js não encontrado:', window.sha, window.sha256);
                 throw new Error('sha.js não encontrado');
             }
             const t0 = performance.now();
@@ -267,8 +266,13 @@ function saveResultsToLocalStorage(results) {
 
 function showResults(results) {
     const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = '<h2>Resultados</h2>' +
-        '<ul>' + results.map(r => `<li><b>${r.name}:</b> ${r.hash} <br><i>${r.time.toFixed(2)} ms</i></li>`).join('') + '</ul>';
+    let html = '<h2>Resultados</h2>';
+    html += '<table border="1" style="width:100%; border-collapse:collapse;"><thead><tr><th>Biblioteca</th><th>Hash</th><th>Tempo (ms)</th></tr></thead><tbody>';
+    results.forEach(r => {
+        html += `<tr><td>${r.name}</td><td>${r.hash}</td><td>${r.time.toFixed(2)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    resultsDiv.innerHTML = html;
 }
 
 function plotChart(results) {
