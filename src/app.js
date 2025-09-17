@@ -154,65 +154,6 @@ const hashFunctions = [
             }
         }
     },
-    // hash.js
-        // sha.js
-    {
-        name: 'SHA-256 (sha.js)',
-        async hash(buffer) {
-            let Sha256 = window.sha || window.sha256;
-            if (!Sha256) {
-                console.error('sha.js não encontrado:', window.sha, window.sha256);
-                throw new Error('sha.js não encontrado');
-            }
-            const t0 = performance.now();
-            try {
-                const hash = (new Sha256()).update(new Uint8Array(buffer)).digest('hex');
-                const t1 = performance.now();
-                return { hash, time: t1 - t0 };
-            } catch (e) {
-                console.error('Erro sha.js:', e);
-                throw e;
-            }
-        }
-    },,
-    {
-        name: 'SHA-1 (hash.js)',
-        async hash(buffer) {
-            let hashjsObj = window.hashjs || window.hash_js || window.hash;
-            if (!hashjsObj) {
-                console.error('hash.js não encontrado:', window.hashjs, window.hash_js, window.hash);
-                throw new Error('hash.js não encontrado');
-            }
-            const t0 = performance.now();
-            try {
-                const hash = hashjsObj.sha1().update(new Uint8Array(buffer)).digest('hex');
-                const t1 = performance.now();
-                return { hash, time: t1 - t0 };
-            } catch (e) {
-                console.error('Erro hash.js SHA-1:', e);
-                throw e;
-            }
-        }
-    },
-    {
-        name: 'SHA-512 (hash.js)',
-        async hash(buffer) {
-            let hashjsObj = window.hashjs || window.hash_js || window.hash;
-            if (!hashjsObj) {
-                console.error('hash.js não encontrado:', window.hashjs, window.hash_js, window.hash);
-                throw new Error('hash.js não encontrado');
-            }
-            const t0 = performance.now();
-            try {
-                const hash = hashjsObj.sha512().update(new Uint8Array(buffer)).digest('hex');
-                const t1 = performance.now();
-                return { hash, time: t1 - t0 };
-            } catch (e) {
-                console.error('Erro hash.js SHA-512:', e);
-                throw e;
-            }
-        }
-    },
     // md5
     {
         name: 'MD5 (md5)',
